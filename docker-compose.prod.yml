@@ -1,0 +1,45 @@
+name: dev_edu
+services:
+  redis:
+    image: redis:7
+    container_name: dev_edu_redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+
+  web:
+    build: .
+    container_name: dev_edu_web
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    ports:
+      - "8767:8000" # host:container
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.prod
+    command: >
+      bash -c "uvicorn config.asgi:application --host 0.0.0.0 --port 8000"
+
+  db:
+    image: postgres:18
+    container_name: dev_edu_db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redisdata:
