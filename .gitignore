@@ -5,9 +5,6 @@ venv/
 env
 static/
 static_root/
-*/migrations/*.py
-!*/migrations/__init__.py
-migrations
 __pycache__
 
 *.pyc
