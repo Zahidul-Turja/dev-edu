@@ -1,8 +1,14 @@
 import random
 import redis
 from django.conf import settings
+from core.exceptions import (
+    OTPCooldownError,
+    OTPExpiredError,
+    OTPMaxAttemptsError,
+    OTPInvalidError,
+)
 
-redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_response=True)
+redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
 class OTPService:
@@ -21,17 +27,15 @@ class OTPService:
 
     @classmethod
     def generate(cls, email):
-        if redis_client.exists(cls._cooldown_key(email=email)):
-            ttl = redis_client.ttl(cls._cooldown_key(email=email))
-            raise Exception(f"Please wait {ttl}s before requesting another OTP")
+        if redis_client.exists(cls._cooldown_key(email)):
+            ttl = redis_client.ttl(cls._cooldown_key(email))
+            raise OTPCooldownError(f"Please wait {ttl}s before requesting another OTP")
 
-        code = f"{random.randint(0, 9999)}:04d"
+        code = f"{random.randint(0, 999999):06d}"
+        redis_client.setex(cls._code_key(email), settings.OTP_EXPIRY_SECONDS, code)
+        redis_client.delete(cls._attempts_key(email))
         redis_client.setex(
-            name=cls._code_key(email), time=settings.OTP_EXPIRY_SECONDS, value=code
-        )
-        redis_client.delete(cls._attempts_key)
-        redis_client.setex(
-            name=cls._cooldown_key(email), time=settings.OTP_EXPIRY_SECONDS
+            cls._cooldown_key(email), settings.OTP_RESEND_COOLDOWN_SECONDS, 1
         )
         return code
 
@@ -39,17 +43,19 @@ class OTPService:
     def verify(cls, email, code):
         stored = redis_client.get(cls._code_key(email))
         if stored is None:
-            raise Exception("OTP expired or invalid.")
+            raise OTPExpiredError("OTP expired or invalid. Please request a new one.")
 
-        attempts = redis_client.incr(cls._attempts_key(email), amount=1)
+        attempts = redis_client.incr(cls._attempts_key(email))
         redis_client.expire(cls._attempts_key(email), settings.OTP_EXPIRY_SECONDS)
 
         if attempts > settings.OTP_MAX_ATTEMPTS:
             redis_client.delete(cls._code_key(email))
-            raise Exception("Too many incorrect attempts. Please request a new OTP.")
+            raise OTPMaxAttemptsError(
+                "Too many incorrect attempts. Please request a new OTP."
+            )
 
         if stored != code:
-            raise Exception("Incorrect OTP")
+            raise OTPInvalidError("Incorrect OTP")
 
         redis_client.delete(cls._code_key(email), cls._attempts_key(email))
         return True

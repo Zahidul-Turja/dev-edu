@@ -124,6 +124,14 @@ REST_FRAMEWORK = {
         # "rest_framework.permissions.AllowAny",
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "otp_request": "5/hour",
+        "otp_verify": "10/hour",
+        "login": "20/hour",
+    },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 16,
     "DEFAULT_RENDERER_CLASSES": [
