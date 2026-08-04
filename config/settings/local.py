@@ -143,9 +143,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=env.get_value("ACCESS_LIFE_TIME_DAYS", 7)),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        days=env.get_value("ACCESS_LIFE_TIME_DAYS", cast=int, default=7)
+    ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=env.get_value("REFRESH_LIFE_TIME_DAYS", 10)
+        days=env.get_value("REFRESH_LIFE_TIME_DAYS", cast=int, default=10)
     ),
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
@@ -179,4 +181,4 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static_root")
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
 
-OTP_EXPIRY_SECONDS = env.get_value("OTP_EXPIRY_SECONDS")
+OTP_EXPIRY_SECONDS = env.get_value("OTP_EXPIRY_SECONDS", cast=int, default=300)
