@@ -1,6 +1,7 @@
 import os
 import environ
 from pathlib import Path
+from datetime import timedelta
 
 env = environ.Env(DEBUG=(bool, False))
 
@@ -90,6 +91,11 @@ CHANNEL_LAYERS = {
     },
 }
 
+REDIS_URL = env.get_value(
+    "REDIS_URL",
+    default=f"redis://redis:{env.get_value("REDIS_PORT", cast=str, default="6379")}/0",
+)
+
 AUTH_USER_MODEL = "user_management.User"
 
 # Password validation
@@ -128,6 +134,18 @@ REST_FRAMEWORK = {
     # "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=env.get_value("ACCESS_LIFE_TIME_DAYS", 7)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        days=env.get_value("REFRESH_LIFE_TIME_DAYS", 10)
+    ),
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_ACCESS_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "BLACKLIST_AFTER_ROTATION": True,
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -152,3 +170,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static_root")
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media/")
+
+OTP_EXPIRY_SECONDS = env.get_value("OTP_EXPIRY_SECONDS")

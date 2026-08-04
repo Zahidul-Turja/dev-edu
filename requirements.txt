@@ -13,6 +13,7 @@ psycopg2-binary==2.9.12
 PyJWT==2.13.0
 python-dotenv==1.2.2
 PyYAML==6.0.3
+redis==8.1.0
 sqlparse==0.5.5
 uvicorn==0.52.1
 uvloop==0.22.1
