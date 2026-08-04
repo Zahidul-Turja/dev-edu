@@ -1,8 +1,15 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+
+from user_management.urls import auth_urlpatterns_v1
+
+api_v1_urls = [
+    path("auth/", include(auth_urlpatterns_v1), name="auth_v1"),
+]
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/v1/", include(api_v1_urls), name="api_v1"),
 ]
 
 

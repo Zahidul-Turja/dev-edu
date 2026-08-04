@@ -3,8 +3,13 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from user_management.serializers import SignupSerializer, EmailOTPSerializer
+from user_management.serializers import (
+    SignupSerializer,
+    EmailOTPSerializer,
+    UserOwnProfileSerializer,
+)
 from user_management.services import OTPService
 from core.exceptions import (
     OTPCooldownError,
@@ -12,6 +17,7 @@ from core.exceptions import (
     OTPInvalidError,
     OTPMaxAttemptsError,
 )
+from core.models import OTPPurpose
 
 User = get_user_model()
 
@@ -25,14 +31,19 @@ class SignupView(APIView):
         try:
             serializer.is_valid(raise_exception=True)
 
-            if User.objects.filter(email=serializer.validated_data["email"]).exists():
+            if User.objects.filter(
+                email__iexact=serializer.validated_data["email"]
+            ).exists():
                 return Response(
                     {"message": "You already signed up. Please try login"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             user = serializer.save()
 
-            code = OTPService.generate(email=user.email)
+            code = OTPService.generate(
+                email=user.email,
+                purpose=OTPPurpose.SIGNUP,
+            )
             # TODO: send OTP to email
 
         except Exception as e:
@@ -56,12 +67,25 @@ class SignupVerifyOTPView(APIView):
         otp = serializer.validated_data["otp"]
 
         try:
-            OTPService.verify(email, otp)
+            OTPService.verify(email, otp, OTPPurpose.SIGNUP)
         except (OTPExpiredError, OTPMaxAttemptsError, OTPInvalidError) as e:
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         User.objects.filter(email=email).update(is_verified=True)
+
+        user = User.objects.get(email__iexact=email)
+        refresh = RefreshToken.for_user(user=user)
+        serializer = UserOwnProfileSerializer(user, context={"request": request})
+
+        response_body = serializer.data
+        response_body["message"] = "Account verified successfully."
+        response_body["access"] = str(refresh.access_token)
+        response_body["refresh"] = str(refresh)
+
         return Response(
-            {"message": "Account verified successfully."},
+            response_body,
             status=status.HTTP_200_OK,
         )
