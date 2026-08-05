@@ -256,7 +256,7 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user=user)
         serializer = UserOwnProfileSerializer(user, context={"request": request})
 
-        response_body = serializer.validated_data
+        response_body = serializer.data
         response_body["toast"] = f"Welcome back {user.full_name}"
         response_body["toast_type"] = ToastType.SUCCESS
         response_body["access"] = str(refresh.access_token)
@@ -285,7 +285,7 @@ class ForgetPasswordView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        email = serializer.validated_data["email"]
+        email = serializer.validated_data["email"].strip().lower()
 
         if User.objects.filter(email__iexact=email).exists():
             try:
@@ -312,7 +312,7 @@ class ForgetPasswordVerifyOTPView(APIView):
         serializer = EmailOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data["email"].strip()
+        email = serializer.validated_data["email"].strip().lower()
         otp = serializer.validated_data["otp"]
 
         try:
