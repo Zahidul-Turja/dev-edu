@@ -109,3 +109,5 @@ class SignupVerifyOTPView(APIView):
             response_body,
             status=status.HTTP_200_OK,
         )
+
+

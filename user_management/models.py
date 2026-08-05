@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 from django.core.validators import MaxLengthValidator, MinLengthValidator
@@ -71,6 +72,14 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
             return constants.DEFAULT_AVATAR_FEMALE
 
         return constants.DEFAULT_AVATAR
+
+    def clean(self):
+        if self.full_name:
+            self.full_name = re.sub(r"\s+", " ", self.full_name).strip()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 
 class SocialLink(BaseModel):
