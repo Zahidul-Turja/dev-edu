@@ -1,4 +1,4 @@
-def format_errors(errors):
+def format_serializer_errors(errors):
     formatted = []
     for field, messages in errors.items():
         for message in messages:

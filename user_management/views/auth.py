@@ -9,16 +9,16 @@ from user_management.serializers import (
     SignupSerializer,
     EmailOTPSerializer,
     UserOwnProfileSerializer,
+    EmailPasswordSerializer,
 )
 from user_management.services import OTPService
 from core.exceptions import (
-    OTPCooldownError,
     OTPExpiredError,
     OTPInvalidError,
     OTPMaxAttemptsError,
 )
 from core.models import OTPPurpose
-from core.helper_functions import format_errors
+from core.helper_functions import format_serializer_errors
 
 User = get_user_model()
 
@@ -33,7 +33,7 @@ class SignupView(APIView):
             return Response(
                 {
                     "toast": "Signup failed",
-                    "errors": format_errors(serializer.errors),
+                    "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -79,7 +79,7 @@ class SignupVerifyOTPView(APIView):
             return Response(
                 {
                     "toast": "OTP verification failed",
-                    "errors": format_errors(serializer.errors),
+                    "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -111,3 +111,41 @@ class SignupVerifyOTPView(APIView):
         )
 
 
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = EmailPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "toast": "Login failed",
+                    "errors": format_serializer_errors(serializer.errors),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = serializer.data["email"]
+        password = serializer.data["password"]
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not (user and user.check_password(password)):
+            return Response(
+                {
+                    "toast": "Invalid email or password",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        refresh = RefreshToken.for_user(user=user)
+        serializer = UserOwnProfileSerializer(user, context={"request": request})
+
+        response_body = serializer.data
+        response_body["toast"] = f"Welcome back {user.full_name}"
+        response_body["access"] = str(refresh.access_token)
+        response_body["refresh"] = str(refresh)
+
+        return Response(
+            response_body,
+            status=status.HTTP_200_OK,
+        )

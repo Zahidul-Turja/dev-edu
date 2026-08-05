@@ -25,6 +25,11 @@ class EmailOTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=4, min_length=4)
 
 
+class EmailPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+
 class SocialLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = SocialLink
