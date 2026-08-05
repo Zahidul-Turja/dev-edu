@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from user_management.models import User, InstructorApplication
+from user_management.models import User, InstructorApplication, SocialLink
+
+
+class SocialLinkTabular(admin.TabularInline):
+    model = SocialLink
+    fields = ["platform", "url"]
+    extra = 0
 
 
 class UserAdmin(BaseUserAdmin):
@@ -57,6 +63,9 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+    inlines = [
+        SocialLinkTabular,
+    ]
 
 
 admin.site.register(User, UserAdmin)

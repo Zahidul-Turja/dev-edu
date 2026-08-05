@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from user_management.models import User
+from user_management.models import User, SocialLink
 
 
 class SignupSerializer(serializers.ModelSerializer):
@@ -25,8 +25,15 @@ class EmailOTPSerializer(serializers.Serializer):
     otp = serializers.CharField(max_length=4, min_length=4)
 
 
+class SocialLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SocialLink
+        fields = ["platform", "url"]
+
+
 class UserOwnProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
+    social_links = SocialLinkSerializer(many=True)
 
     class Meta:
         model = User
@@ -38,6 +45,7 @@ class UserOwnProfileSerializer(serializers.ModelSerializer):
             "about",
             "gender",
             "date_of_birth",
+            "social_links",
         ]
 
     def get_avatar(self, obj):

@@ -2,10 +2,11 @@ from django.contrib import admin
 from django.urls import path, include
 
 from config.views import HealthView
-from user_management.urls import auth_urlpatterns_v1
+from user_management.urls import auth_urlpatterns_v1, user_urlpatterns_v1
 
 api_v1_urls = [
     path("auth/", include(auth_urlpatterns_v1), name="auth_v1"),
+    path("me/", include(user_urlpatterns_v1), name="user_v1"),
 ]
 
 urlpatterns = [
