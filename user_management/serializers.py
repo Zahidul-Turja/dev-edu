@@ -47,6 +47,15 @@ class ChangePasswordSerializer(serializers.Serializer):
     password = serializers.CharField()
     new_password = serializers.CharField()
 
+    def validate_new_password(self, value):
+        if self.password == value:
+            raise serializers.ValidationError(
+                "New password can not be the same as previous"
+            )
+
+        validate_password(value)
+        return value
+
 
 class SocialLinkSerializer(serializers.ModelSerializer):
     class Meta:
