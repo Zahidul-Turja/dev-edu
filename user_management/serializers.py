@@ -43,6 +43,11 @@ class ResetPasswordSerializer(serializers.Serializer):
         return value
 
 
+class ChangePasswordSerializer(serializers.Serializer):
+    password = serializers.CharField()
+    new_password = serializers.CharField()
+
+
 class SocialLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = SocialLink

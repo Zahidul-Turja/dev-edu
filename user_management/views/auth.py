@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import update_last_login
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,6 +15,7 @@ from user_management.serializers import (
     UserOwnProfileSerializer,
     EmailPasswordSerializer,
     ResetPasswordSerializer,
+    ChangePasswordSerializer,
 )
 from user_management.services import OTPService, ResetTokenService
 from user_management.tokens import PasswordResetToken
@@ -120,8 +122,9 @@ class SignupVerifyOTPView(APIView):
             )
 
         User.objects.filter(email=email).update(is_verified=True)
-
         user = User.objects.get(email__iexact=email)
+        update_last_login(None, user)
+
         refresh = RefreshToken.for_user(user=user)
         serializer = UserOwnProfileSerializer(user, context={"request": request})
 
@@ -221,6 +224,8 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        update_last_login(None, user)
+
         refresh = RefreshToken.for_user(user=user)
         serializer = UserOwnProfileSerializer(user, context={"request": request})
 
@@ -303,7 +308,6 @@ class ForgetPasswordVerifyOTPView(APIView):
 
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
-    throttle_scope = "password_reset"  # you're missing this too
 
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
@@ -324,5 +328,40 @@ class ResetPasswordView(APIView):
 
         return Response(
             {"message": "Password reset successful"},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "toast": "Failed to signup",
+                    "errors": format_serializer_errors(serializer.errors),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        old_password = serializer.validated_data["password"]
+        new_password = serializer.validated_data["new_password"]
+        if not user.check_password(old_password):
+            return Response(
+                {
+                    "toast": "Failed to change password",
+                    "errors": [{"password": "Password does not match"}],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        return Response(
+            {"toast": "Password changed successfully"},
             status=status.HTTP_200_OK,
         )

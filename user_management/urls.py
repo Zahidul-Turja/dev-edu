@@ -8,6 +8,7 @@ from user_management.views.auth import (
     ForgetPasswordView,
     ForgetPasswordVerifyOTPView,
     ResetPasswordView,
+    ChangePasswordView,
 )
 from user_management.views.users import UserOwnProfileView
 
@@ -33,6 +34,7 @@ auth_urlpatterns_v1 = [
         ResetPasswordView.as_view(),
         name="reset_password",
     ),
+    path("change-password/", ChangePasswordView.as_view(), name="change_password"),
 ]
 
 
