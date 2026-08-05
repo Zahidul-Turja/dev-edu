@@ -38,6 +38,27 @@ services:
       timeout: 5s
       retries: 5
 
+  celery_worker_default:
+    container_name: dev_edu_worker_default
+    build: .
+    command: celery -A config worker -Q default -l info --concurrency=1
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.local
+    depends_on: [db, redis]
+
+  celery_worker_media:
+    container_name: dev_edu_worker_media
+    build: .
+    command: celery -A config worker -Q media -l info --concurrency=1
+    env_file: .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.local
+    volumes:
+      - media_volume:/app/media
+    depends_on: [db, redis]
+
 volumes:
   postgres_data:
   redisdata:
+  media_volume:

@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
+    "django_celery_beat",
     "user_management",
     "core",
 ]
@@ -91,10 +93,6 @@ CHANNEL_LAYERS = {
     },
 }
 
-REDIS_URL = env.get_value(
-    "REDIS_URL",
-    default=f"redis://redis:{env.get_value("REDIS_PORT", cast=str, default="6379")}/0",
-)
 
 AUTH_USER_MODEL = "user_management.User"
 
@@ -187,3 +185,11 @@ OTP_MAX_ATTEMPTS = env.get_value("OTP_MAX_ATTEMPTS", cast=int, default=5)
 OTP_RESEND_COOLDOWN_SECONDS = env.get_value(
     "OTP_RESEND_COOLDOWN_SECONDS", cast=int, default=180
 )
+
+
+REDIS_URL = env.get_value("REDIS_URL", cast=str, default="redis://redis:6379/0")
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
