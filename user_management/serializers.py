@@ -22,7 +22,7 @@ class SignupSerializer(serializers.ModelSerializer):
 
 class EmailOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    otp = serializers.CharField(max_length=6, min_length=6)
+    otp = serializers.CharField(max_length=4, min_length=4)
 
 
 class UserOwnProfileSerializer(serializers.ModelSerializer):
@@ -41,5 +41,5 @@ class UserOwnProfileSerializer(serializers.ModelSerializer):
         ]
 
     def get_avatar(self, obj):
-        request = self.context.get(request)
+        request = self.context.get("request")
         return request.build_absolute_uri(obj.get_avatar())

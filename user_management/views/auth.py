@@ -18,6 +18,7 @@ from core.exceptions import (
     OTPMaxAttemptsError,
 )
 from core.models import OTPPurpose
+from core.helper_functions import format_errors
 
 User = get_user_model()
 
@@ -28,32 +29,44 @@ class SignupView(APIView):
 
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
-        try:
-            serializer.is_valid(raise_exception=True)
-
-            if User.objects.filter(
-                email__iexact=serializer.validated_data["email"]
-            ).exists():
-                return Response(
-                    {"message": "You already signed up. Please try login"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            user = serializer.save()
-
-            code = OTPService.generate(
-                email=user.email,
-                purpose=OTPPurpose.SIGNUP,
-            )
-            # TODO: send OTP to email
-
-        except Exception as e:
+        if not serializer.is_valid():
             return Response(
                 {
-                    "error_message": "Signup failed. Please try again later.",
-                    "detail": str(e),
+                    "toast": "Signup failed",
+                    "errors": format_errors(serializer.errors),
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_400_BAD_REQUEST,
             )
+
+        serializer.is_valid(raise_exception=True)
+
+        if User.objects.filter(
+            email__iexact=serializer.validated_data["email"]
+        ).exists():
+            return Response(
+                {
+                    "toast": "You already signed up. Please try login",
+                    "errors": [
+                        {
+                            "field": "email",
+                            "message": "Email already exists",
+                        }
+                    ],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = serializer.save()
+
+        code = OTPService.generate(
+            email=user.email,
+            purpose=OTPPurpose.SIGNUP,
+        )
+        # TODO: send OTP to email
+
+        return Response(
+            {"toast": f"Please verify OTP sent to {user.email}."},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class SignupVerifyOTPView(APIView):
@@ -62,7 +75,14 @@ class SignupVerifyOTPView(APIView):
 
     def post(self, request):
         serializer = EmailOTPSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "toast": "OTP verification failed",
+                    "errors": format_errors(serializer.errors),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         email = serializer.validated_data["email"]
         otp = serializer.validated_data["otp"]
 
@@ -81,7 +101,7 @@ class SignupVerifyOTPView(APIView):
         serializer = UserOwnProfileSerializer(user, context={"request": request})
 
         response_body = serializer.data
-        response_body["message"] = "Account verified successfully."
+        response_body["toast"] = f"Welcome to DevEdu {user.full_name}"
         response_body["access"] = str(refresh.access_token)
         response_body["refresh"] = str(refresh)
 
