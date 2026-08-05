@@ -29,6 +29,7 @@ auth_urlpatterns_v1 = [
         ForgetPasswordVerifyOTPView.as_view(),
         name="forget_password_verify_otp",
     ),
+    path("forget-password/resend-otp/", GeneralResendOTPView.as_view(), name="forget_password_resend_otp"),
     path(
         "forget-password/reset/",
         ResetPasswordView.as_view(),

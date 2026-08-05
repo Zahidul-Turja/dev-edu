@@ -25,7 +25,7 @@ from core.exceptions import (
     OTPMaxAttemptsError,
     OTPCooldownError,
 )
-from core.models import OTPPurpose
+from core.models import OTPPurpose, ToastType
 from core.helper_functions import format_serializer_errors
 
 User = get_user_model()
@@ -41,6 +41,7 @@ class SignupView(APIView):
             return Response(
                 {
                     "toast": "Failed to signup",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -54,6 +55,7 @@ class SignupView(APIView):
             return Response(
                 {
                     "toast": "You already signed up. Please try login",
+                    "toast_type": ToastType.ERROR,
                     "errors": [
                         {
                             "field": "email",
@@ -70,6 +72,8 @@ class SignupView(APIView):
                 email=user.email,
                 purpose=OTPPurpose.SIGNUP,
             )
+
+            # TODO: send otp
         except (
             OTPExpiredError,
             OTPMaxAttemptsError,
@@ -77,7 +81,10 @@ class SignupView(APIView):
             OTPCooldownError,
         ) as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "toast": str(e),
+                    "toast_type": ToastType.ERROR,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -86,6 +93,7 @@ class SignupView(APIView):
         return Response(
             {
                 "toast": f"Please verify OTP sent to {user.email}.",
+                "toast_type": ToastType.SUCCESS,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -101,6 +109,7 @@ class SignupVerifyOTPView(APIView):
             return Response(
                 {
                     "toast": "OTP verification failed",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -117,7 +126,10 @@ class SignupVerifyOTPView(APIView):
             OTPCooldownError,
         ) as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "toast": str(e),
+                    "toast_type": ToastType.ERROR,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -130,6 +142,7 @@ class SignupVerifyOTPView(APIView):
 
         response_body = serializer.validated_data
         response_body["toast"] = f"Welcome to DevEdu {user.full_name}"
+        response_body["toast_type"] = (ToastType.SUCCESS,)
         response_body["access"] = str(refresh.access_token)
         response_body["refresh"] = str(refresh)
 
@@ -152,6 +165,7 @@ class GeneralResendOTPView(APIView):
             return Response(
                 {
                     "toast": "Failed to resend OTP.",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -159,10 +173,13 @@ class GeneralResendOTPView(APIView):
 
         if route_name == "signup_resend_otp":
             purpose = OTPPurpose.SIGNUP
+        elif route_name == "forget_password_resend_otp":
+            purpose = OTPPurpose.FORGET_PASSWORD
         else:
             return Response(
                 {
                     "toast": "Something went wrong.",
+                    "toast_type": ToastType.ERROR,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -172,18 +189,25 @@ class GeneralResendOTPView(APIView):
                 email=serializer.validated_data["email"],
                 purpose=purpose,
             )
+            # TODO: send OTP
         except (
             OTPExpiredError,
             OTPMaxAttemptsError,
             OTPInvalidError,
         ) as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "toast": str(e),
+                    "toast_type": ToastType.ERROR,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except OTPCooldownError as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "toast": str(e),
+                    "toast_type": ToastType.ERROR,
+                },
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
@@ -192,6 +216,7 @@ class GeneralResendOTPView(APIView):
         return Response(
             {
                 "toast": f"OTP resent to {serializer.validated_data["email"]}.",
+                "toast_type": ToastType.SUCCESS,
             },
             status=status.HTTP_200_OK,
         )
@@ -207,6 +232,7 @@ class LoginView(APIView):
             return Response(
                 {
                     "toast": "Login failed",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -220,6 +246,7 @@ class LoginView(APIView):
             return Response(
                 {
                     "toast": "Invalid email or password",
+                    "toast_type": ToastType.WARNING,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -231,6 +258,7 @@ class LoginView(APIView):
 
         response_body = serializer.validated_data
         response_body["toast"] = f"Welcome back {user.full_name}"
+        response_body["toast_type"] = ToastType.SUCCESS
         response_body["access"] = str(refresh.access_token)
         response_body["refresh"] = str(refresh)
 
@@ -251,6 +279,7 @@ class ForgetPasswordView(APIView):
             return Response(
                 {
                     "toast": "Invalid request",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -268,7 +297,8 @@ class ForgetPasswordView(APIView):
 
         return Response(
             {
-                "message": "If this email is registered, a reset OTP has been sent.",
+                "toast": "If this email is registered, a reset OTP has been sent.",
+                "toast_type": ToastType.SUCCESS,
             },
             status=status.HTTP_200_OK,
         )
@@ -294,14 +324,21 @@ class ForgetPasswordVerifyOTPView(APIView):
             OTPCooldownError,
         ) as e:
             return Response(
-                {"error": str(e)},
+                {
+                    "toast": str(e),
+                    "toast_type": ToastType.ERROR,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = User.objects.get(email__iexact=email)
         token = PasswordResetToken.for_user(user)
         return Response(
-            {"reset_token": str(token)},
+            {
+                "reset_token": str(token),
+                "toast": "OTP verified successfully",
+                "toast_type": ToastType.SUCCESS,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -327,7 +364,10 @@ class ResetPasswordView(APIView):
         user.save(update_fields=["password"])
 
         return Response(
-            {"message": "Password reset successful"},
+            {
+                "toast": "Password reset successful",
+                "toast_type": ToastType.SUCCESS,
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -343,6 +383,7 @@ class ChangePasswordView(APIView):
             return Response(
                 {
                     "toast": "Failed to signup",
+                    "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -353,6 +394,7 @@ class ChangePasswordView(APIView):
             return Response(
                 {
                     "toast": "Failed to change password",
+                    "toast_type": ToastType.ERROR,
                     "errors": [{"password": "Password does not match"}],
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -362,6 +404,9 @@ class ChangePasswordView(APIView):
         user.save(update_fields=["password"])
 
         return Response(
-            {"toast": "Password changed successfully"},
+            {
+                "toast": "Password changed successfully",
+                "toast_type": ToastType.SUCCESS,
+            },
             status=status.HTTP_200_OK,
         )
