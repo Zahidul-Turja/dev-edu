@@ -20,6 +20,10 @@ class SignupSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
 class EmailOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     otp = serializers.CharField(max_length=4, min_length=4)
@@ -28,6 +32,15 @@ class EmailOTPSerializer(serializers.Serializer):
 class EmailPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    reset_token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
 
 
 class SocialLinkSerializer(serializers.ModelSerializer):

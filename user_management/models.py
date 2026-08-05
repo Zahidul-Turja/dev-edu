@@ -77,6 +77,9 @@ class User(AbstractBaseUser, PermissionsMixin, BaseModel):
         if self.full_name:
             self.full_name = re.sub(r"\s+", " ", self.full_name).strip()
 
+        if self.email:
+            self.email = re.sub(r"\s+", " ", self.email).strip()
+
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)

@@ -13,5 +13,4 @@ class BaseModel(models.Model):
 class OTPPurpose(models.TextChoices):
     SIGNUP = "signup", "Signup"
     FORGET_PASSWORD = "forget_password", "Forget Password"
-    RESET_PASSWORD = "reset_password", "Reset password"
     CHANGE_PASSWORD = "change_password", "Change password"
