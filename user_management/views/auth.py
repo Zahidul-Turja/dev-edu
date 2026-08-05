@@ -303,30 +303,6 @@ class ForgetPasswordVerifyOTPView(APIView):
 
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
-
-    def post(self, request):
-        try:
-            token = PasswordResetToken(request.data.get("reset_token"))
-        except Exception:
-            raise AuthenticationFailed("Invalid or expired token")
-
-        # JSON web token ID (JTI)
-        jti = token["jti"]
-        if ResetTokenService.reset_token_exists(jti=jti):
-            raise AuthenticationFailed("Token already used")
-
-        user_id = token["user_id"]
-
-        ResetTokenService.set_reset_token(jti=jti)
-
-        return Response(
-            {"message": "Password reset successful"},
-            status=status.HTTP_200_OK,
-        )
-
-
-class ResetPasswordView(APIView):
-    permission_classes = [AllowAny]
     throttle_scope = "password_reset"  # you're missing this too
 
     def post(self, request):
