@@ -10,6 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
+ENVIRONMENT = env.get_value("ENVIRONMENT", cast=str, default="development")
+
 SECRET_KEY = env.get_value(var="SECRET_KEY", cast=str)
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -185,6 +187,14 @@ OTP_MAX_ATTEMPTS = env.get_value("OTP_MAX_ATTEMPTS", cast=int, default=5)
 OTP_RESEND_COOLDOWN_SECONDS = env.get_value(
     "OTP_RESEND_COOLDOWN_SECONDS", cast=int, default=180
 )
+
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env.get_value("EMAIL_HOST", cast=str, default="smtp.gmail.com")
+EMAIL_PORT = env.get_value("EMAIL_PORT", cast=str, default=587)
+EMAIL_USE_TLS = env.get_value("EMAIL_USE_TLS", cast=str).lower() == "true"
+EMAIL_HOST_USER = env.get_value("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env.get_value("EMAIL_HOST_PASSWORD")
 
 
 REDIS_URL = env.get_value("REDIS_URL", cast=str, default="redis://redis:6379/0")
