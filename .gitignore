@@ -28,3 +28,4 @@ rnd/*
 *.mp4
 
 *.python-version
+*.coverage

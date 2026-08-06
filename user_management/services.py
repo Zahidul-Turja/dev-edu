@@ -34,12 +34,16 @@ class OTPService:
 
         # code = f"{random.randint(0, 999999):06d}"
         code = f"1234"
-        redis_client.setex(
-            cls._code_key(email, purpose), settings.OTP_EXPIRY_SECONDS, code
+        redis_client.set(
+            name=cls._code_key(email, purpose),
+            ex=settings.OTP_EXPIRY_SECONDS,
+            value=code,
         )
         redis_client.delete(cls._attempts_key(email, purpose))
-        redis_client.setex(
-            cls._cooldown_key(email, purpose), settings.OTP_RESEND_COOLDOWN_SECONDS, 1
+        redis_client.set(
+            name=cls._cooldown_key(email, purpose),
+            ex=settings.OTP_RESEND_COOLDOWN_SECONDS,
+            value=1,
         )
         return code
 
