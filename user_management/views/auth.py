@@ -25,6 +25,7 @@ from core.exceptions import (
     OTPMaxAttemptsError,
     OTPCooldownError,
 )
+from user_management.tasks import send_otp_email
 from core.models import OTPPurpose, ToastType
 from core.helper_functions import format_serializer_errors
 
@@ -72,8 +73,6 @@ class SignupView(APIView):
                 email=user.email,
                 purpose=OTPPurpose.SIGNUP,
             )
-
-            # TODO: send otp
         except (
             OTPExpiredError,
             OTPMaxAttemptsError,
@@ -88,8 +87,11 @@ class SignupView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # TODO: send OTP to email
-
+        send_otp_email.delay(
+            recipient_email=user.email,
+            code=code,
+            purpose=OTPPurpose.SIGNUP,
+        )
         return Response(
             {
                 "toast": f"Please verify OTP sent to {user.email}.",
@@ -140,9 +142,9 @@ class SignupVerifyOTPView(APIView):
         refresh = RefreshToken.for_user(user=user)
         serializer = UserOwnProfileSerializer(user, context={"request": request})
 
-        response_body = serializer.validated_data
+        response_body = serializer.data
         response_body["toast"] = f"Welcome to DevEdu {user.full_name}"
-        response_body["toast_type"] = (ToastType.SUCCESS,)
+        response_body["toast_type"] = ToastType.SUCCESS
         response_body["access"] = str(refresh.access_token)
         response_body["refresh"] = str(refresh)
 
@@ -184,12 +186,13 @@ class GeneralResendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        email = serializer.validated_data["email"]
         try:
             code = OTPService.generate(
-                email=serializer.validated_data["email"],
+                email=email,
                 purpose=purpose,
             )
-            # TODO: send OTP
+
         except (
             OTPExpiredError,
             OTPMaxAttemptsError,
@@ -211,8 +214,11 @@ class GeneralResendOTPView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        # TODO: send OTP to email
-
+        send_otp_email.delay(
+            recipient_email=email,
+            code=code,
+            purpose=purpose,
+        )
         return Response(
             {
                 "toast": f"OTP resent to {serializer.validated_data["email"]}.",
@@ -290,11 +296,13 @@ class ForgetPasswordView(APIView):
         if User.objects.filter(email__iexact=email).exists():
             try:
                 code = OTPService.generate(email, OTPPurpose.FORGET_PASSWORD)
-                # TODO: send otp
-                # send_otp_email.delay(email, code, purpose="password_reset")
             except OTPCooldownError:
                 pass
-
+        send_otp_email.delay(
+            recipient_email=email,
+            code=code,
+            purpose=OTPPurpose.FORGET_PASSWORD,
+        )
         return Response(
             {
                 "toast": "If this email is registered, a reset OTP has been sent.",
