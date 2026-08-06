@@ -7,11 +7,13 @@ from core.models import OTPPurpose
 
 @shared_task
 def send_otp_email(recipient_email: str, code: str, purpose: OTPPurpose.choices):
-    subject = (
-        "Your DevEdu verification code"
-        if purpose == OTPPurpose.SIGNUP
-        else "Your DevEdu password reset code"
-    )
+    if purpose == OTPPurpose.SIGNUP:
+        subject = "Your DevEdu verification code"
+    elif purpose == OTPPurpose.FORGET_PASSWORD:
+        subject = "Your DevEdu password reset code"
+    else:
+        subject = "Your DevEdu OTP code"
+
     from_email = settings.EMAIL_HOST_USER
     to = [recipient_email]
 
