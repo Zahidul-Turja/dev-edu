@@ -177,9 +177,9 @@ class GeneralResendOTPView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if route_name == "signup_resend_otp":
+        if route_name == "signup-resend-otp":
             purpose = OTPPurpose.SIGNUP
-        elif route_name == "forget_password_resend_otp":
+        elif route_name == "forget-password-resend-otp":
             purpose = OTPPurpose.FORGET_PASSWORD
         else:
             return Response(
@@ -261,16 +261,27 @@ class LoginView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not user.is_verified:
+            return Response(
+                {
+                    "toast": "Please verify your email first",
+                    "toast_type": ToastType.WARNING,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
         update_last_login(None, user)
 
         refresh = RefreshToken.for_user(user=user)
-        serializer = UserOwnProfileSerializer(user, context={"request": request})
+        user_data = UserOwnProfileSerializer(user, context={"request": request}).data
 
-        response_body = serializer.data
-        response_body["toast"] = f"Welcome back {user.full_name}"
-        response_body["toast_type"] = ToastType.SUCCESS
-        response_body["access"] = str(refresh.access_token)
-        response_body["refresh"] = str(refresh)
+        response_body = {
+            **user_data,
+            "toast": f"Welcome back {user.full_name}",
+            "toast_type": ToastType.SUCCESS,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
 
         return Response(
             response_body,
@@ -462,7 +473,7 @@ class GoogleAuthView(APIView):
                 "full_name": id_info.get("name", ""),
                 "auth_provider": User.AuthProvider.GOOGLE,
                 "avatar_url": id_info.get("picture"),
-                "is_verified": True,
+                "is_verified": id_info.get("email_verified", False),
             },
         )
         if created:
