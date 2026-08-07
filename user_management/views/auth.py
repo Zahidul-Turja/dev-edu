@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
+from django.conf import settings
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
 
 from user_management.serializers import (
     SignupSerializer,
@@ -16,6 +19,7 @@ from user_management.serializers import (
     EmailPasswordSerializer,
     ResetPasswordSerializer,
     ChangePasswordSerializer,
+    GoogleAuthSerializer,
 )
 from user_management.services import OTPService, ResetTokenService
 from user_management.tokens import PasswordResetToken
@@ -419,3 +423,67 @@ class ChangePasswordView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class GoogleAuthView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data["id_token"]
+
+        try:
+            id_info = google_id_token.verify_oauth2_token(
+                token, google_requests.Request(), settings.GOOGLE_OAUTH_CLIENT_ID
+            )
+        except ValueError:
+            return Response(
+                {
+                    "toast": "Invalid Google token",
+                    "toast_type": ToastType.ERROR,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not id_info.get("email_verified"):
+            return Response(
+                {
+                    "toast": "Google account email is not verified.",
+                    "toast_type": ToastType.ERROR,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        email = id_info["email"]
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "full_name": id_info.get("name", ""),
+                "auth_provider": User.AuthProvider.GOOGLE,
+                "avatar_url": id_info.get("picture"),
+                "is_verified": True,
+            },
+        )
+        if created:
+            user.set_unusable_password()
+            user.save()
+
+        update_last_login(None, user)
+
+        refresh = RefreshToken.for_user(user=user)
+        user_data = UserOwnProfileSerializer(user, context={"request": request}).data
+
+        response_body = {
+            **user_data,
+            "toast": (
+                f"Welcome to DevEdu {user.full_name}"
+                if created
+                else f"Welcome back, {user.full_name}"
+            ),
+            "toast_type": ToastType.SUCCESS,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+
+        return Response(response_body, status=status.HTTP_200_OK)
