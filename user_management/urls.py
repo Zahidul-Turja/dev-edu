@@ -5,9 +5,9 @@ from user_management.views.auth import (
     SignupVerifyOTPView,
     LoginView,
     GeneralResendOTPView,
-    ForgetPasswordView,
+    ForgetPasswordRequestView,
     ForgetPasswordVerifyOTPView,
-    ResetPasswordView,
+    ForgetPasswordConfirmView,
     ChangePasswordView,
 )
 from user_management.views.users import UserOwnProfileView
@@ -20,20 +20,24 @@ auth_urlpatterns_v1 = [
     ),
     path("login/", LoginView.as_view(), name="login"),
     path(
-        "forget-password/",
-        ForgetPasswordView.as_view(),
-        name="forget_password",
+        "forget-password/request/",
+        ForgetPasswordRequestView.as_view(),
+        name="forget_password_request",
     ),
     path(
         "forget-password/verify-otp/",
         ForgetPasswordVerifyOTPView.as_view(),
         name="forget_password_verify_otp",
     ),
-    path("forget-password/resend-otp/", GeneralResendOTPView.as_view(), name="forget_password_resend_otp"),
     path(
-        "forget-password/reset/",
-        ResetPasswordView.as_view(),
-        name="reset_password",
+        "forget-password/resend-otp/",
+        GeneralResendOTPView.as_view(),
+        name="forget_password_resend_otp",
+    ),
+    path(
+        "forget-password/confirm/",
+        ForgetPasswordConfirmView.as_view(),
+        name="forget_password_confirm",
     ),
     path("change-password/", ChangePasswordView.as_view(), name="change_password"),
 ]

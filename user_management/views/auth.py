@@ -274,7 +274,7 @@ class LoginView(APIView):
         )
 
 
-class ForgetPasswordView(APIView):
+class ForgetPasswordRequestView(APIView):
     permission_classes = [AllowAny]
     throttle_scope = "otp_request"
 
@@ -351,7 +351,7 @@ class ForgetPasswordVerifyOTPView(APIView):
         )
 
 
-class ResetPasswordView(APIView):
+class ForgetPasswordConfirmView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
