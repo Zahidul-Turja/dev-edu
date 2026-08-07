@@ -11,7 +11,7 @@ class TestOTPVerification:
         code = OTPService.generate(user.email, OTPPurpose.SIGNUP)
 
         response = api_client.post(
-            reverse("signup_otp_verify"), {"email": user.email, "otp": code}
+            reverse("signup-otp-verify"), {"email": user.email, "otp": code}
         )
 
         assert response.status_code == 200
@@ -23,7 +23,7 @@ class TestOTPVerification:
         OTPService.generate(user.email, OTPPurpose.SIGNUP)
 
         response = api_client.post(
-            reverse("signup_otp_verify"), {"email": user.email, "otp": "0000"}
+            reverse("signup-otp-verify"), {"email": user.email, "otp": "0000"}
         )
 
         assert response.status_code == 400

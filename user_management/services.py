@@ -53,6 +53,9 @@ class OTPService:
         if stored is None:
             raise OTPExpiredError("OTP expired or invalid. Please request a new one.")
 
+        # redis client sent byte, so need to decode to string
+        stored = stored.decode()
+
         attempts = redis_client.incr(cls._attempts_key(email, purpose))
         redis_client.expire(
             cls._attempts_key(email, purpose), settings.OTP_EXPIRY_SECONDS
