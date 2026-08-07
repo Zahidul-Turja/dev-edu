@@ -41,7 +41,7 @@ auth_urlpatterns_v1 = [
         name="forget-password-confirm",
     ),
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
-    path("google/", GoogleAuthView.as_view(), name="google_auth"),
+    path("google/", GoogleAuthView.as_view(), name="google-auth"),
 ]
 
 
