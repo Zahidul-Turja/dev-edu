@@ -25,7 +25,7 @@ class TestSignup:
         assert "verification code" in mail.outbox[0].subject.lower()
 
     def test_signup_duplicate_email_fails(self, api_client, make_user):
-        make_user(email="taken@example.com")
+        make_user(email="taken@example.com", password="StrongPass123!")
 
         response = api_client.post(
             reverse("signup"),
