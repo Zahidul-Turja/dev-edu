@@ -1,10 +1,7 @@
 from django.urls import path
+from .views import CategoryListView, CourseCreateUpdateView
 
-from courses.views import CategoryListView
-
-instructor_urlpatterns_v1 = []
-student_urlpatterns_v1 = []
-
-courses_urlpatterns_v1 = [
+urlpatterns = [
     path("categories/", CategoryListView.as_view(), name="category-list"),
+    path("courses/", CourseCreateUpdateView.as_view(), name="course-create-update"),
 ]
