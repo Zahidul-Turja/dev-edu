@@ -33,6 +33,7 @@ class Course(BaseModel):
 
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
+        SUBMITTED_FOR_REVIEW = "submitted_for_review", "Submitted for review"
         PUBLISHED = "published", "Published"
         DELETED = "deleted", "Deleted"
         REJECTED = "rejected", "Rejected"
@@ -69,6 +70,8 @@ class Course(BaseModel):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )
+
+    is_verified = models.BooleanField(default=False)
 
     class Meta:
         db_table = "courses"

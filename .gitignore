@@ -20,6 +20,7 @@ rnd/*
 # Add these lines to your .gitignore file
 .env
 *.env
+*.venv
 
 
 *.png

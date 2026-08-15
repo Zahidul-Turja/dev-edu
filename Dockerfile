@@ -3,7 +3,8 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc ffmpeg \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
