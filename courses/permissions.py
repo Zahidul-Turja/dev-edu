@@ -15,20 +15,24 @@ def get_course(obj):
 
 
 class IsInstructorRole(permissions.BasePermission):
-
+    """
+    Requires the user to be authenticated and hold an INSTRUCTOR or ADMIN role.
+    """
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated and request.user.role in (
-            User.Role.INSTRUCTOR,
-            User.Role.ADMIN,
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in (User.Role.INSTRUCTOR, User.Role.ADMIN)
         )
 
 
 class IsCourseOwner(permissions.BasePermission):
-
+    """
+    Ensures the authenticated user is either staff or the instructor who created the course.
+    Works for Course, Section, and Lecture objects via get_course(obj).
+    """
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
+        if not (request.user and request.user.is_authenticated):
+            return False
         course = get_course(obj)
         return request.user.is_staff or course.instructor_id == request.user.id

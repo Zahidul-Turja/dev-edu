@@ -5,18 +5,19 @@ from django.conf.urls.static import static
 
 from config.views import HealthView
 from user_management.urls import auth_urlpatterns_v1, user_urlpatterns_v1
-from courses.urls import courses_urlpatterns_v1
+from courses.urls import courses_urlpatterns_v1, instructor_urlpatterns_v1
 
 api_v1_urls = [
     path("", include(courses_urlpatterns_v1)),
-    path("auth/", include(auth_urlpatterns_v1), name="auth_v1"),
-    path("me/", include(user_urlpatterns_v1), name="user_v1"),
+    path("instructor/", include(instructor_urlpatterns_v1)),
+    path("auth/", include(auth_urlpatterns_v1)),
+    path("me/", include(user_urlpatterns_v1)),
 ]
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", HealthView.as_view(), name="health"),
-    path("api/v1/", include(api_v1_urls), name="api_v1"),
+    path("api/v1/", include(api_v1_urls)),
 ]
 
 if settings.ENVIRONMENT != "production":
