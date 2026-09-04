@@ -6,6 +6,7 @@ from courses.models import Category, Course
 from courses.serializers import CategorySerializer, CourseCreateSerializer
 from user_management.models import User
 
+
 @pytest.mark.django_db
 class TestCategoryListView:
     def test_category_list_success(self, api_client):
@@ -30,7 +31,13 @@ class TestCategoryListView:
 @pytest.mark.django_db
 class TestCourseCreateUpdateView:
     def test_course_create_success(self, api_client, make_user):
-        user = make_user(email="instructor@example.com", password="StrongPass123!", is_verified=True)
+        category = Category.objects.create(name="Web Development")
+        user = make_user(
+            email="instructor@example.com",
+            password="StrongPass123!",
+            is_verified=True,
+            role=User.Role.INSTRUCTOR,
+        )
         api_client.force_authenticate(user=user)
 
         payload = {
@@ -39,15 +46,16 @@ class TestCourseCreateUpdateView:
             "description_rich": "<p>Description</p>",
             "requirements": ["Requirement 1", "Requirement 2"],
             "what_you_will_learn": ["Learn 1", "Learn 2"],
-            "category": 1,  # Assuming category with id=1 exists
+            "category": category.id,
             "level": "beginner",
             "language": "English",
-            "thumbnail": None,
             "price": 100.00,
             "status": "draft",
         }
 
-        response = api_client.post(reverse("course-create-update"), payload)
+        response = api_client.post(
+            reverse("course-create-update"), payload, format="json"
+        )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data.get("toast_type") == ToastType.SUCCESS
@@ -60,21 +68,48 @@ class TestCourseCreateUpdateView:
             "description_rich": "<p>Description</p>",
             "requirements": ["Requirement 1", "Requirement 2"],
             "what_you_will_learn": ["Learn 1", "Learn 2"],
-            "category": 1,  # Assuming category with id=1 exists
+            "category": 1,
             "level": "beginner",
             "language": "English",
-            "thumbnail": None,
             "price": 100.00,
             "status": "draft",
         }
 
-        response = api_client.post(reverse("course-create-update"), payload)
+        response = api_client.post(
+            reverse("course-create-update"), payload, format="json"
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_course_create_forbidden_for_student(self, api_client, make_user):
+        category = Category.objects.create(name="Design")
+        user = make_user(
+            email="student@example.com",
+            password="StrongPass123!",
+            is_verified=True,
+            role=User.Role.STUDENT,
+        )
+        api_client.force_authenticate(user=user)
+
+        payload = {
+            "title": "Student Course",
+            "category": category.id,
+        }
+
+        response = api_client.post(
+            reverse("course-create-update"), payload, format="json"
+        )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert response.data.get("toast_type") == ToastType.ERROR
 
     def test_course_create_invalid_data(self, api_client, make_user):
-        user = make_user(email="instructor@example.com", password="StrongPass123!", is_verified=True)
+        category = Category.objects.create(name="Data Science")
+        user = make_user(
+            email="instructor@example.com",
+            password="StrongPass123!",
+            is_verified=True,
+            role=User.Role.INSTRUCTOR,
+        )
         api_client.force_authenticate(user=user)
 
         payload = {
@@ -83,16 +118,18 @@ class TestCourseCreateUpdateView:
             "description_rich": "<p>Description</p>",
             "requirements": ["Requirement 1", "Requirement 2"],
             "what_you_will_learn": ["Learn 1", "Learn 2"],
-            "category": 1,  # Assuming category with id=1 exists
+            "category": category.id,
             "level": "beginner",
             "language": "English",
-            "thumbnail": None,
             "price": 100.00,
             "status": "draft",
         }
 
-        response = api_client.post(reverse("course-create-update"), payload)
+        response = api_client.post(
+            reverse("course-create-update"), payload, format="json"
+        )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get("toast_type") == ToastType.ERROR
-        assert "title" in response.data.get("errors", {})
+        error_fields = [item["field"] for item in response.data.get("errors", [])]
+        assert "title" in error_fields

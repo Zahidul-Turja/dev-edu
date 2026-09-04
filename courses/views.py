@@ -20,7 +20,7 @@ class GenericPagination(PageNumberPagination):
 
 
 class CategoryListView(ListAPIView):
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by("id")
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
     pagination_class = GenericPagination
@@ -36,7 +36,7 @@ class CourseCreateUpdateView(APIView):
         if not serializer.is_valid():
             return Response(
                 {
-                    "toast": "Failed to signup",
+                    "toast": "Failed to create course",
                     "toast_type": ToastType.ERROR,
                     "errors": format_serializer_errors(serializer.errors),
                 },
